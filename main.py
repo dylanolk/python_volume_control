@@ -36,11 +36,12 @@ SCAN_CODES = {1: 'esc', 2: '1', 3: '2', 4: '3', 5: '4', 6: '5', 7: '6',
 91: 'windows', 92: 'windows', 93: 'menu'}
 
 
-
+#Main App class, keeps track of all combos and active keys.
 class App:
     def __init__(self):
         self.active_keys=set()
-        self.combos = [Combo({"end", "mwheelup"}, {"end", "mwheeldown"}, "currentWindow")]
+        self.combos = [Combo({"f", "up arrow"}, {"f", "down arrow"}, combo_type="currentWindow", suppress=True)]
+
         print(self.combos)
     
     def HandleKeyboard(self, event):
@@ -93,53 +94,53 @@ class App:
         return p.name()
     
     def HandleAudioChange(self, combo):
-        pythoncom.CoInitialize()
-        try:
-            if combo.combo_type == "currentWindow":
-                combo.window_name = self.GetForegroundProcessName()
-            
-            # if combo.combo_type == "masterVolume":
-            #     combo.window_name = 
-
-            volume = combo.GetVolume()
-            current_volume = volume.GetMasterVolume()
-
-            if self.active_keys == combo.combo_up:
-                if current_volume <=.95:
-                    volume.SetMasterVolume(current_volume+.05, None)
-                else:
-                    volume.SetMasterVolume(1,None)
-                    
-            elif self.active_keys == combo.combo_down:
-                if current_volume >= .05:
-                    volume.SetMasterVolume(current_volume-.05, None)
-                else:
-                    volume.SetMasterVolume(0,None)
-
-            print(current_volume)
-            pythoncom.CoUninitialize()
-
-        except:
-            print("current window doesn't have volume")
     
+        pythoncom.CoInitialize()
+        if combo.combo_type == "currentWindow":
+            combo.window_name = self.GetForegroundProcessName()
+        
+        # if combo.combo_type == "masterVolume":
+        #     combo.window_name = 
+
+        volume = combo.GetVolume()
+        current_volume = volume.GetMasterVolume()
+
+        if self.active_keys == combo._combo_up:
+            if current_volume+combo.sensitivty <= 1:
+                volume.SetMasterVolume(current_volume + combo.sensitivity, None)
+            else:
+                volume.SetMasterVolume(1,None)
+
+                
+        elif self.active_keys == combo._combo_down:
+            if current_volume >= combo.sensitivity:
+                volume.SetMasterVolume(current_volume-combo.sensitivity, None)
+            else:
+                volume.SetMasterVolume(0,None)
+                
+
+        print(current_volume)
+        pythoncom.CoUninitialize()
+
+    
+
     def StartListening(self):
-        keyboard.hook_key("end", self.HandleKeyboard, suppress=True)
         keyboard.hook(self.HandleKeyboard)
+
         mouse.hook(self.HandleMouse)
+
+        [x.SuppressKeys(self.HandleKeyboard) for x in self.combos]
+
         print(threading.active_count())
         
         keyboard.wait()
 
 
 def main():
-    app= App()
+    app=App()
     app.StartListening()
-  
-    
-    
 
- 
-    
+
 if __name__ == "__main__":
     main()
 
